@@ -193,10 +193,6 @@ type SessionState
     label lb
     float hi
     float lo
-    box   pBx
-    line  pHiLn
-    line  pLoLn
-    label pLb
 
 var SessionState asiaSt = SessionState.new()
 var SessionState lonSt  = SessionState.new()
@@ -208,15 +204,6 @@ f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool sho
     if not na(start) and (showBox or showHL)
         int end = start + lenMin * MIN_MS
         if na(s.start) or start != s.start
-            // Keep the previous session only.
-            s.pBx.delete()
-            s.pHiLn.delete()
-            s.pLoLn.delete()
-            s.pLb.delete()
-            s.pBx   := s.bx
-            s.pHiLn := s.hiLn
-            s.pLoLn := s.loLn
-            s.pLb   := s.lb
             s.start := start
             s.hi    := high
             s.lo    := low
