@@ -140,26 +140,22 @@ type CycleState
     box        bx
     float      hi
     float      lo
-    array<box> cur
-    array<box> prev
+    array<box> today
 
-var CycleState macroSt = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
-var CycleState midSt   = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
-var CycleState smallSt = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
+var CycleState macroSt = CycleState.new(today = array.new<box>())
+var CycleState midSt   = CycleState.new(today = array.new<box>())
+var CycleState smallSt = CycleState.new(today = array.new<box>())
 
-// On a new AMD day: drop the day before yesterday's boxes, and keep yesterday's
-// boxes only when `keepPrev` is true.
-f_rollover(CycleState st, bool keepPrev) =>
-    for b in st.prev
-        b.delete()
-    st.prev := st.cur
-    st.cur  := array.new<box>()
-    if not keepPrev
-        for b in st.prev
+// On a new AMD day, forget the previous day's boxes; delete them when `keepBoxes` is false.
+f_rollover(CycleState st, bool keepBoxes) =>
+    if not keepBoxes
+        for b in st.today
             b.delete()
-        st.prev.clear()
+    st.today.clear()
     st
 
+// 270m and 90m boxes are kept for as many days as TradingView allows (500 boxes);
+// 30m boxes are shown for the current day only.
 bool newAmdDay = inAmd and amdStart != nz(amdStart[1])
 if newAmdDay
     f_rollover(macroSt, true)
@@ -174,7 +170,7 @@ f_cycle(CycleState st, bool show, int start, int lenMin, int phase) =>
             st.hi    := high
             st.lo    := low
             st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = c, bgcolor = c)
-            st.cur.push(st.bx)
+            st.today.push(st.bx)
         else
             st.hi := math.max(st.hi, high)
             st.lo := math.min(st.lo, low)

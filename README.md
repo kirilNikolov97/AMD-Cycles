@@ -22,7 +22,7 @@ Starting at **Start Hour : Start Minute** (default 02:30), the day is split into
 
 Each cycle is a box from its start time to its end time, spanning the high and low of the cycle so far. Boxes use the Accumulation, Manipulation and Distribution colors. A level is skipped when the chart timeframe is longer than the cycle.
 
-**History**: the current AMD day shows all three levels. The previous day keeps only its 270m and 90m boxes; older days are removed. A new AMD day starts at the Start time (02:30).
+**History**: the current AMD day shows all three levels. Earlier days keep only their 270m and 90m boxes, for as many days as TradingView allows (500 boxes, roughly a month). A new AMD day starts at the Start time (02:30).
 
 ## 4. Macro time zones
 
