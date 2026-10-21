@@ -26,7 +26,7 @@ Each cycle is a box from its start time to its end time, spanning the high and l
 
 ## 4. Macro time zones
 
-A zone runs every hour from `xx:Start` to the next `yy:End` (default xx:45 → yy:15). Only one zone is drawn, as two full-height vertical lines at its start and end: the active zone in **Active Zone Color**, or the next one in **Upcoming Zone Color**. Time labels show the zone's start and end.
+A zone runs every hour from `xx:Start` to the next `yy:End` (default xx:45 → yy:15). Only one zone is drawn, as two full-height vertical lines at its start and end: the active zone in **Active Zone Color**, or the next one in **Upcoming Zone Color**. Time labels show the zone's start and end. Zones are not drawn on timeframes above 15m.
 
 ## 6. Open lines
 

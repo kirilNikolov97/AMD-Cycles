@@ -299,8 +299,8 @@ var line  zoneLnR  = na
 var label zoneLblL = na
 var label zoneLblR = na
 
-// Full-height vertical lines at the zone's start and end.
-if barstate.islast and showMacroZones
+// Full-height vertical lines at the zone's start and end; hidden above 15m charts.
+if barstate.islast and showMacroZones and tfSec <= 900
     zoneLnL.delete()
     zoneLnR.delete()
     zoneLblL.delete()
