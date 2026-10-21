@@ -148,16 +148,14 @@ var CycleState macroSt = CycleState.new()
 var CycleState midSt   = CycleState.new()
 var CycleState smallSt = CycleState.new()
 
-var array<string> PHASE_TXT = array.from("Acc", "Man", "Dist")
-
-f_cycle(CycleState st, bool show, int start, int lenMin, int phase, bool withText, string halign) =>
+f_cycle(CycleState st, bool show, int start, int lenMin, int phase) =>
     if show and not na(start) and tfSec <= lenMin * 60
         if na(st.start) or start != st.start
             color c = f_phaseColor(phase)
             st.start := start
             st.hi    := high
             st.lo    := low
-            st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = f_solid(c), bgcolor = c, text = withText ? PHASE_TXT.get(phase) : "", text_size = size.tiny, text_color = f_solid(c), text_halign = halign, text_valign = text.align_top)
+            st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = f_solid(c), bgcolor = c)
         else
             st.hi := math.max(st.hi, high)
             st.lo := math.min(st.lo, low)
@@ -165,9 +163,9 @@ f_cycle(CycleState st, bool show, int start, int lenMin, int phase, bool withTex
             st.bx.set_bottom(st.lo)
     st
 
-f_cycle(macroSt, showMacroBox, macroStart, 270, macroIdx, true, text.align_center)
-f_cycle(midSt, showMidBox, midStart, 90, midIdx, true, text.align_left)
-f_cycle(smallSt, showSmallBox, smallStart, 30, smallIdx, false, text.align_left)
+f_cycle(macroSt, showMacroBox, macroStart, 270, macroIdx)
+f_cycle(midSt, showMidBox, midStart, 90, midIdx)
+f_cycle(smallSt, showSmallBox, smallStart, 30, smallIdx)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sessions
@@ -311,8 +309,8 @@ var table statusTbl = showTable ? table.new(f_tablePos(tablePosInput), 4, 5, bgc
 
 if barstate.islast and showTable
     statusTbl.cell(0, 0, "", text_size = size.tiny)
-    for [c, name] in PHASE_TXT
-        statusTbl.cell(c + 1, 0, str.substring(name, 0, 1), text_color = TBL_TEXT, text_size = size.tiny)
+    for [c, name] in array.from("A", "M", "D")
+        statusTbl.cell(c + 1, 0, name, text_color = TBL_TEXT, text_size = size.tiny)
     array<string> rowNames = array.from("270m", "90m", "30m")
     array<int>    rowIdx   = array.from(macroIdx, midIdx, smallIdx)
     for r = 0 to 2

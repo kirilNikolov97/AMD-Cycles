@@ -20,7 +20,7 @@ Starting at **Start Hour : Start Minute** (default 02:30), the day is split into
 | Middle | 90m | each 270m → A · M · D |
 | Small | 30m | each 90m → A · M · D |
 
-Each cycle is a box from its start time to its end time, spanning the high and low of the cycle so far. Boxes use the Accumulation, Manipulation and Distribution colors. Macro and middle boxes carry an `Acc` / `Man` / `Dist` label. A level is skipped when the chart timeframe is longer than the cycle.
+Each cycle is a box from its start time to its end time, spanning the high and low of the cycle so far. Boxes use the Accumulation, Manipulation and Distribution colors. A level is skipped when the chart timeframe is longer than the cycle.
 
 ## 4. Macro time zones
 
