@@ -301,10 +301,17 @@ var line     zoneLnR  = na
 var linefill zoneFill = na
 var label    zoneLblL = na
 var label    zoneLblR = na
+var int      zoneKey  = na
+var float    zoneLblY = na
 
 // Inside a zone: full-height band (fill between two invisible vertical lines).
 // Outside: dotted vertical lines at the next zone's start and end. Hidden above 15m charts.
 if barstate.islast and showMacroZones and tfSec <= 900
+    // Labels stay at the price where the current zone (active or upcoming) was first drawn.
+    int key = zoneActive ? zoneStart : -zoneStart
+    if na(zoneKey) or key != zoneKey
+        zoneKey  := key
+        zoneLblY := close
     zoneFill.delete()
     zoneLnL.delete()
     zoneLnR.delete()
@@ -317,8 +324,8 @@ if barstate.islast and showMacroZones and tfSec <= 900
     if zoneActive
         zoneFill := linefill.new(zoneLnL, zoneLnR, activeZoneColor)
     if showTimeLabels
-        zoneLblL := label.new(zoneStart, close, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
-        zoneLblR := label.new(zoneEnd, close, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+        zoneLblL := label.new(zoneStart, zoneLblY, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+        zoneLblR := label.new(zoneEnd, zoneLblY, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status table

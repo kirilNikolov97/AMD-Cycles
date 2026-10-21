@@ -33,7 +33,7 @@ A zone runs every hour from `xx:Start` to the next `yy:End` (default xx:45 → y
 - **Inside a zone**: a full-height band in **Active Zone Color** from the zone's start to its end.
 - **Outside a zone**: dotted vertical lines in **Upcoming Zone Color** at the next zone's start and end.
 
-Time labels (e.g. `1:45`, `2:15`) sit on each boundary, just above the current price. Zones are not drawn on timeframes above 15m.
+Time labels (e.g. `1:45`, `2:15`) sit on each boundary, just above the price at the moment the zone (active or upcoming) was first drawn, and stay fixed there. Zones are not drawn on timeframes above 15m.
 
 ## 6. Open lines
 
