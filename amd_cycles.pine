@@ -22,8 +22,8 @@ showMacroZones   = input.bool(true, "Show Macro Zones", group = GRP_MT)
 showTimeLabels   = input.bool(true, "Show Time Labels", group = GRP_MT)
 zoneStartMin     = input.int(45, "Zone Start Minute (xx:__)", minval = 0, maxval = 59, group = GRP_MT)
 zoneEndMin       = input.int(15, "Zone End Minute (yy:__)", minval = 0, maxval = 59, group = GRP_MT, tooltip = "A zone runs every hour from xx:Start to the next yy:End (e.g. 00:45 to 01:15).")
-activeZoneColor  = input.color(color.new(#FFEB3B, 20), "Active Zone Color", group = GRP_MT)
-upcomingZoneColor = input.color(color.new(#787B86, 20), "Upcoming Zone Color", group = GRP_MT)
+activeZoneColor  = input.color(color.new(#FDD835, 90), "Active Zone Color", group = GRP_MT, tooltip = "Full-height band while inside a zone.")
+upcomingZoneColor = input.color(#787B86, "Upcoming Zone Color", group = GRP_MT, tooltip = "Dotted lines at the next zone's start and end while outside a zone.")
 mtLabelColor     = input.color(color.white, "Label Color", group = GRP_MT)
 mtLabelSize      = input.string("small", "Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_MT)
 
@@ -294,23 +294,29 @@ else if minuteTime >= zoneStart + zoneLenMs
 int zoneEnd     = zoneStart + zoneLenMs
 bool zoneActive = minuteTime >= zoneStart and minuteTime < zoneEnd
 
-var line  zoneLnL  = na
-var line  zoneLnR  = na
-var label zoneLblL = na
-var label zoneLblR = na
+var line     zoneLnL  = na
+var line     zoneLnR  = na
+var linefill zoneFill = na
+var label    zoneLblL = na
+var label    zoneLblR = na
 
-// Full-height vertical lines at the zone's start and end; hidden above 15m charts.
+// Inside a zone: full-height band (fill between two invisible vertical lines).
+// Outside: dotted vertical lines at the next zone's start and end. Hidden above 15m charts.
 if barstate.islast and showMacroZones and tfSec <= 900
+    zoneFill.delete()
     zoneLnL.delete()
     zoneLnR.delete()
     zoneLblL.delete()
     zoneLblR.delete()
-    color zc = zoneActive ? activeZoneColor : upcomingZoneColor
-    zoneLnL := line.new(zoneStart, close, zoneStart, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = zc)
-    zoneLnR := line.new(zoneEnd, close, zoneEnd, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = zc)
+    color lnCol   = zoneActive ? NO_COLOR : upcomingZoneColor
+    string lnStyle = zoneActive ? line.style_solid : line.style_dotted
+    zoneLnL := line.new(zoneStart, close, zoneStart, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = lnCol, style = lnStyle)
+    zoneLnR := line.new(zoneEnd, close, zoneEnd, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = lnCol, style = lnStyle)
+    if zoneActive
+        zoneFill := linefill.new(zoneLnL, zoneLnR, activeZoneColor)
     if showTimeLabels
-        zoneLblL := label.new(zoneStart, close, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_right, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
-        zoneLblR := label.new(zoneEnd, close, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_left, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+        zoneLblL := label.new(zoneStart, close, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+        zoneLblR := label.new(zoneEnd, close, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_down, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status table
