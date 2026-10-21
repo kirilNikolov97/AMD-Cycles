@@ -163,6 +163,7 @@ f_cycle(CycleState st, bool show, int start, int lenMin, int phase, bool withTex
             st.lo := math.min(st.lo, low)
             st.bx.set_top(st.hi)
             st.bx.set_bottom(st.lo)
+    st
 
 f_cycle(macroSt, showMacroBox, macroStart, 270, macroIdx, true, text.align_center)
 f_cycle(midSt, showMidBox, midStart, 90, midIdx, true, text.align_left)
@@ -211,6 +212,7 @@ f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool sho
                 s.loLn.set_y1(s.lo)
                 s.loLn.set_y2(s.lo)
                 s.lb.set_y(s.hi)
+    s
 
 f_session(asiaSt, asiaOpenHour, asiaOpenMinute, asiaCloseHour, asiaCloseMinute, showAsiaBox, asiaBoxColor, showAsiaHL, asiaHLColor, asiaLabelSize, "Asia")
 f_session(lonSt, lonOpenHour, lonOpenMinute, lonCloseHour, lonCloseMinute, false, NO_COLOR, showLonHL, lonHLColor, lonLabelSize, "London")
@@ -243,6 +245,7 @@ f_openLine(OpenLine o, bool show, bool trig, bool extendNow, string txt) =>
         else if extendNow and not na(o.ln)
             o.ln.set_x2(x2)
             o.lb.set_x(x2)
+    o
 
 int coStart  = switch coCycle
     "270m" => macroStart
