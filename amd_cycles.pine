@@ -51,9 +51,9 @@ tablePosInput    = input.string("Top Right", "Table Position", options = ["Top R
 
 GRP_SES = "8. SESSIONS"
 showAsiaBox      = input.bool(true, "Show Asia Session Box", group = GRP_SES)
-asiaBoxColor     = input.color(color.new(#787B86, 85), "Asia Session Box Color", group = GRP_SES)
+asiaBoxColor     = input.color(color.new(color.white, 90), "Asia Session Box Color", group = GRP_SES)
 showAsiaHL       = input.bool(true, "Show Asia High/Low", group = GRP_SES)
-asiaHLColor      = input.color(#F23645, "Asia H/L Color", group = GRP_SES)
+asiaHLColor      = input.color(#F34A58, "Asia H/L Color", group = GRP_SES)
 asiaLabelSize    = input.string("tiny", "Asia H/L Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_SES)
 asiaOpenHour     = input.int(18, "Asia Open Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
 asiaOpenMinute   = input.int(0, "Asia Open Minute", minval = 0, maxval = 59, group = GRP_SES)
@@ -101,9 +101,6 @@ f_tablePos(string s) =>
         "Bottom Right" => position.bottom_right
         "Bottom Left"  => position.bottom_left
         => position.top_right
-
-// Stronger version of a (usually transparent) color, used for borders and text.
-f_solid(color c) => color.new(c, math.max(color.t(c) - 50, 0))
 
 f_phaseColor(int phase) => phase == 0 ? accColor : phase == 1 ? manColor : disColor
 
@@ -176,7 +173,7 @@ f_cycle(CycleState st, bool show, int start, int lenMin, int phase) =>
             st.start := start
             st.hi    := high
             st.lo    := low
-            st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = f_solid(c), bgcolor = c)
+            st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = c, bgcolor = c)
             st.cur.push(st.bx)
         else
             st.hi := math.max(st.hi, high)
