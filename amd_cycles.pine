@@ -80,6 +80,8 @@ nyCloseSesMinute = input.int(0, "New York Close Minute", minval = 0, maxval = 59
 int MIN_MS     = 60000
 int AMD_LEN    = 810   // 3 × 270m
 int tfSec      = timeframe.in_seconds()
+// Daily and higher charts show only the W.O. / M.O. / Y.O. lines and the status table.
+bool intraday  = timeframe.isintraday
 int barMs      = tfSec * 1000
 int modNow     = hour(time, tzInput) * 60 + minute(time, tzInput)
 int minuteTime = time - second(time, tzInput) * 1000
@@ -201,7 +203,7 @@ var SessionState nySt   = SessionState.new()
 f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool showBox, color boxCol, bool showHL, color hlCol, string lblSize, string name) =>
     int lenMin = f_len(openH, openM, closeH, closeM)
     int start  = f_windowStart(openH * 60 + openM, lenMin)
-    if not na(start) and (showBox or showHL)
+    if intraday and not na(start) and (showBox or showHL)
         int end = start + lenMin * MIN_MS
         if na(s.start) or start != s.start
             s.start := start
@@ -268,16 +270,16 @@ int coStart  = switch coCycle
     => midStart
 bool coTrig  = not na(coStart) and coStart != nz(coStart[1])
 
-f_openLine(coLn, showCO, coTrig, inAmd, "C.O.")
-f_openLine(nyOpLn, showNyOpen, f_crossed(nyOpenHour * 60 + nyOpenMinute), true, str.format("{0,number,00}:{1,number,00}", nyOpenHour, nyOpenMinute))
-f_openLine(nyMidLn, showNyMid, f_crossed(nyMidHour * 60 + nyMidMinute), true, str.format("{0,number,00}:{1,number,00}", nyMidHour, nyMidMinute))
+f_openLine(coLn, showCO and intraday, coTrig, inAmd, "C.O.")
+f_openLine(nyOpLn, showNyOpen and intraday, f_crossed(nyOpenHour * 60 + nyOpenMinute), true, str.format("{0,number,00}:{1,number,00}", nyOpenHour, nyOpenMinute))
+f_openLine(nyMidLn, showNyMid and intraday, f_crossed(nyMidHour * 60 + nyMidMinute), true, str.format("{0,number,00}:{1,number,00}", nyMidHour, nyMidMinute))
 f_openLine(yoLn, showYO, timeframe.change("12M"), true, "Y.O.")
 f_openLine(moLn, showMO, timeframe.change("M"), true, "M.O.")
 f_openLine(woLn, showWO, timeframe.change("W"), true, "W.O.")
 
 // Day separator
 bool newDay = f_crossed(0)
-if showDaySep and newDay
+if showDaySep and intraday and newDay
     line.new(time, low, time, high, xloc = xloc.bar_time, extend = extend.both, color = daySepColor, style = line.style_dotted)
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -10,6 +10,8 @@ Pine Script v6 indicator that draws Accumulation / Manipulation / Distribution t
 
 All times are in the **Timezone** input (default `America/New_York`).
 
+On **daily and higher** timeframes only the Y.O. / M.O. / W.O. lines and the status table are drawn; cycles, sessions, macro zones, C.O., NY open / midnight lines and day separators are hidden.
+
 ## 2. AMD cycles
 
 Starting at **Start Hour : Start Minute** (default 02:30), the day is split into three nested levels:
