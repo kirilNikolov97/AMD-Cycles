@@ -56,7 +56,7 @@ Dashed lines from the open of the trigger bar to the current bar + **Extend with
 | London | 02:30–07:00 | high/low lines |
 | New York | 07:00–17:00 | high/low lines |
 
-Lines run from session open to session close and follow the session's high and low. The session name is shown above the high. Sessions are kept for as many days as TradingView allows (500 lines / labels / boxes per script).
+Lines run from session open to session close and follow the session's high and low. The session name is shown above the high of the latest session of each kind; older sessions show only their colors. Sessions are kept for as many days as TradingView allows (500 lines / labels / boxes per script).
 
 ## Future improvements
 

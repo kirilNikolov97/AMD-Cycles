@@ -210,6 +210,8 @@ f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool sho
             if showBox
                 s.bx := box.new(start, high, end, low, xloc = xloc.bar_time, border_color = NO_COLOR, bgcolor = boxCol)
             if showHL
+                // Only the latest session of each kind keeps its name label.
+                s.lb.delete()
                 s.hiLn := line.new(start, high, end, high, xloc = xloc.bar_time, color = hlCol)
                 s.loLn := line.new(start, low, end, low, xloc = xloc.bar_time, color = hlCol)
                 s.lb   := label.new(start, high, name, xloc = xloc.bar_time, style = label.style_label_lower_left, color = NO_COLOR, textcolor = hlCol, size = f_size(lblSize))
