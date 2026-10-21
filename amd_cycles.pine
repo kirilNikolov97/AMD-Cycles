@@ -22,8 +22,8 @@ showMacroZones   = input.bool(true, "Show Macro Zones", group = GRP_MT)
 showTimeLabels   = input.bool(true, "Show Time Labels", group = GRP_MT)
 zoneStartMin     = input.int(45, "Zone Start Minute (xx:__)", minval = 0, maxval = 59, group = GRP_MT)
 zoneEndMin       = input.int(15, "Zone End Minute (yy:__)", minval = 0, maxval = 59, group = GRP_MT, tooltip = "A zone runs every hour from xx:Start to the next yy:End (e.g. 00:45 to 01:15).")
-activeZoneColor  = input.color(color.new(#FFEB3B, 85), "Active Zone Color", group = GRP_MT)
-upcomingZoneColor = input.color(color.new(#787B86, 85), "Upcoming Zone Color", group = GRP_MT)
+activeZoneColor  = input.color(color.new(#FFEB3B, 20), "Active Zone Color", group = GRP_MT)
+upcomingZoneColor = input.color(color.new(#787B86, 20), "Upcoming Zone Color", group = GRP_MT)
 mtLabelColor     = input.color(color.white, "Label Color", group = GRP_MT)
 mtLabelSize      = input.string("small", "Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_MT)
 
@@ -139,14 +139,35 @@ int midStart   = inAmd ? macroStart + midIdx * 90 * MIN_MS : int(na)
 int smallStart = inAmd ? midStart + smallIdx * 30 * MIN_MS : int(na)
 
 type CycleState
-    int   start
-    box   bx
-    float hi
-    float lo
+    int        start
+    box        bx
+    float      hi
+    float      lo
+    array<box> cur
+    array<box> prev
 
-var CycleState macroSt = CycleState.new()
-var CycleState midSt   = CycleState.new()
-var CycleState smallSt = CycleState.new()
+var CycleState macroSt = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
+var CycleState midSt   = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
+var CycleState smallSt = CycleState.new(cur = array.new<box>(), prev = array.new<box>())
+
+// On a new AMD day: drop the day before yesterday's boxes, and keep yesterday's
+// boxes only when `keepPrev` is true.
+f_rollover(CycleState st, bool keepPrev) =>
+    for b in st.prev
+        b.delete()
+    st.prev := st.cur
+    st.cur  := array.new<box>()
+    if not keepPrev
+        for b in st.prev
+            b.delete()
+        st.prev.clear()
+    st
+
+bool newAmdDay = inAmd and amdStart != nz(amdStart[1])
+if newAmdDay
+    f_rollover(macroSt, true)
+    f_rollover(midSt, true)
+    f_rollover(smallSt, false)
 
 f_cycle(CycleState st, bool show, int start, int lenMin, int phase) =>
     if show and not na(start) and tfSec <= lenMin * 60
@@ -156,6 +177,7 @@ f_cycle(CycleState st, bool show, int start, int lenMin, int phase) =>
             st.hi    := high
             st.lo    := low
             st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = f_solid(c), bgcolor = c)
+            st.cur.push(st.bx)
         else
             st.hi := math.max(st.hi, high)
             st.lo := math.min(st.lo, low)
@@ -178,6 +200,10 @@ type SessionState
     label lb
     float hi
     float lo
+    box   pBx
+    line  pHiLn
+    line  pLoLn
+    label pLb
 
 var SessionState asiaSt = SessionState.new()
 var SessionState lonSt  = SessionState.new()
@@ -189,6 +215,15 @@ f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool sho
     if not na(start) and (showBox or showHL)
         int end = start + lenMin * MIN_MS
         if na(s.start) or start != s.start
+            // Keep the previous session only.
+            s.pBx.delete()
+            s.pHiLn.delete()
+            s.pLoLn.delete()
+            s.pLb.delete()
+            s.pBx   := s.bx
+            s.pHiLn := s.hiLn
+            s.pLoLn := s.loLn
+            s.pLb   := s.lb
             s.start := start
             s.hi    := high
             s.lo    := low
@@ -277,22 +312,20 @@ else if minuteTime >= zoneStart + zoneLenMs
 int zoneEnd     = zoneStart + zoneLenMs
 bool zoneActive = minuteTime >= zoneStart and minuteTime < zoneEnd
 
-// Zone height: the last ~6 hours of price, padded.
-int   bandLen = int(math.max(1, math.min(21600 / tfSec, 1000)))
-float bandHi  = ta.highest(high, bandLen)
-float bandLo  = ta.lowest(low, bandLen)
+var line  zoneLnL  = na
+var line  zoneLnR  = na
+var label zoneLblL = na
+var label zoneLblR = na
 
-var box   zoneBox   = na
-var label zoneLblL  = na
-var label zoneLblR  = na
-
+// Full-height vertical lines at the zone's start and end.
 if barstate.islast and showMacroZones
-    zoneBox.delete()
+    zoneLnL.delete()
+    zoneLnR.delete()
     zoneLblL.delete()
     zoneLblR.delete()
-    float pad = (nz(bandHi, high) - nz(bandLo, low)) * 0.1
-    color zc  = zoneActive ? activeZoneColor : upcomingZoneColor
-    zoneBox := box.new(zoneStart, nz(bandHi, high) + pad, zoneEnd, nz(bandLo, low) - pad, xloc = xloc.bar_time, border_color = NO_COLOR, bgcolor = zc)
+    color zc = zoneActive ? activeZoneColor : upcomingZoneColor
+    zoneLnL := line.new(zoneStart, close, zoneStart, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = zc)
+    zoneLnR := line.new(zoneEnd, close, zoneEnd, close + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = zc)
     if showTimeLabels
         zoneLblL := label.new(zoneStart, close, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_right, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
         zoneLblR := label.new(zoneEnd, close, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_left, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))

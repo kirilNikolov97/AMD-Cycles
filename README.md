@@ -22,9 +22,11 @@ Starting at **Start Hour : Start Minute** (default 02:30), the day is split into
 
 Each cycle is a box from its start time to its end time, spanning the high and low of the cycle so far. Boxes use the Accumulation, Manipulation and Distribution colors. A level is skipped when the chart timeframe is longer than the cycle.
 
+**History**: the current AMD day shows all three levels. The previous day keeps only its 270m and 90m boxes; older days are removed. A new AMD day starts at the Start time (02:30).
+
 ## 4. Macro time zones
 
-A zone runs every hour from `xx:Start` to the next `yy:End` (default xx:45 → yy:15). Only one zone is drawn: the active one in **Active Zone Color**, or the next one in **Upcoming Zone Color**. Time labels show the zone's start and end. The zone's height covers roughly the last 6 hours of price.
+A zone runs every hour from `xx:Start` to the next `yy:End` (default xx:45 → yy:15). Only one zone is drawn, as two full-height vertical lines at its start and end: the active zone in **Active Zone Color**, or the next one in **Upcoming Zone Color**. Time labels show the zone's start and end.
 
 ## 6. Open lines
 
@@ -54,7 +56,7 @@ Dashed lines from the open of the trigger bar to the current bar + **Extend with
 | London | 02:30–07:00 | high/low lines |
 | New York | 07:00–17:00 | high/low lines |
 
-Lines run from session open to session close and follow the session's high and low. The session name is shown above the high.
+Lines run from session open to session close and follow the session's high and low. The session name is shown above the high. Only the current and previous session of each kind are kept.
 
 ## Future improvements
 
