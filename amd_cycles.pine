@@ -1,0 +1,327 @@
+//@version=6
+indicator("AMD Cycles", shorttitle = "AMD Cycles", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inputs
+// ─────────────────────────────────────────────────────────────────────────────
+GRP_GEN = "1. GENERAL SETTINGS"
+tzInput          = input.string("America/New_York", "Timezone", options = ["America/New_York", "America/Chicago", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Asia/Hong_Kong", "Australia/Sydney", "UTC"], group = GRP_GEN, tooltip = "All hours and minutes below are in this timezone.")
+
+GRP_AMD = "2. AMD SETTINGS"
+amdHour          = input.int(2, "Start Hour (24h)", minval = 0, maxval = 23, group = GRP_AMD, tooltip = "Start of the first 270m cycle. Three 270m cycles (A, M, D) follow, 13.5h in total.")
+amdMinute        = input.int(30, "Start Minute", minval = 0, maxval = 59, group = GRP_AMD)
+showMacroBox     = input.bool(true, "Show Macro Boxes (270m)", group = GRP_AMD)
+showMidBox       = input.bool(true, "Show Middle Cycle Boxes (90m)", group = GRP_AMD)
+showSmallBox     = input.bool(true, "Show Small Cycle Boxes (30m)", group = GRP_AMD)
+accColor         = input.color(color.new(#2962FF, 85), "Accumulation Color", group = GRP_AMD)
+manColor         = input.color(color.new(#F23645, 85), "Manipulation Color", group = GRP_AMD)
+disColor         = input.color(color.new(#4CAF50, 85), "Distribution Color", group = GRP_AMD)
+
+GRP_MT = "4. MACRO TIME SETTINGS"
+showMacroZones   = input.bool(true, "Show Macro Zones", group = GRP_MT)
+showTimeLabels   = input.bool(true, "Show Time Labels", group = GRP_MT)
+zoneStartMin     = input.int(45, "Zone Start Minute (xx:__)", minval = 0, maxval = 59, group = GRP_MT)
+zoneEndMin       = input.int(15, "Zone End Minute (yy:__)", minval = 0, maxval = 59, group = GRP_MT, tooltip = "A zone runs every hour from xx:Start to the next yy:End (e.g. 00:45 to 01:15).")
+activeZoneColor  = input.color(color.new(#FFEB3B, 85), "Active Zone Color", group = GRP_MT)
+upcomingZoneColor = input.color(color.new(#787B86, 85), "Upcoming Zone Color", group = GRP_MT)
+mtLabelColor     = input.color(color.white, "Label Color", group = GRP_MT)
+mtLabelSize      = input.string("small", "Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_MT)
+
+GRP_OL = "6. OPEN LINES"
+olColor          = input.color(color.white, "Line Color", group = GRP_OL)
+olLabelSize      = input.string("normal", "Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_OL)
+olExtend         = input.int(5, "Extend with N bars", minval = 0, maxval = 500, group = GRP_OL)
+showCO           = input.bool(true, "Show C.O. Lines", group = GRP_OL, tooltip = "Cycle Open: open price of the latest AMD cycle.")
+coCycle          = input.string("90m", "C.O. Cycle", options = ["270m", "90m", "30m"], group = GRP_OL)
+showNyOpen       = input.bool(true, "Show NY Open", group = GRP_OL)
+nyOpenHour       = input.int(9, "NY Open Hour (24h)", minval = 0, maxval = 23, group = GRP_OL)
+nyOpenMinute     = input.int(30, "NY Open Minute", minval = 0, maxval = 59, group = GRP_OL)
+showNyMid        = input.bool(true, "Show NY Midnight", group = GRP_OL)
+nyMidHour        = input.int(0, "NY Midnight Hour (24h)", minval = 0, maxval = 23, group = GRP_OL)
+nyMidMinute      = input.int(0, "NY Midnight Minute", minval = 0, maxval = 59, group = GRP_OL)
+showYO           = input.bool(false, "Show Yearly Open (Y.O.)", group = GRP_OL)
+showMO           = input.bool(true, "Show Monthly Open (M.O.)", group = GRP_OL)
+showWO           = input.bool(true, "Show Weekly Open (W.O.)", group = GRP_OL)
+showDaySep       = input.bool(false, "Show Day Separator (00:00)", group = GRP_OL)
+daySepColor      = input.color(color.new(#787B86, 50), "Day Separator Color", group = GRP_OL)
+
+GRP_TBL = "7. STATUS TABLE"
+showTable        = input.bool(false, "Show Status Table", group = GRP_TBL)
+tablePosInput    = input.string("Top Right", "Table Position", options = ["Top Right", "Top Left", "Middle Right", "Middle Left", "Bottom Right", "Bottom Left"], group = GRP_TBL)
+
+GRP_SES = "8. SESSIONS"
+showAsiaBox      = input.bool(true, "Show Asia Session Box", group = GRP_SES)
+asiaBoxColor     = input.color(color.new(#787B86, 85), "Asia Session Box Color", group = GRP_SES)
+showAsiaHL       = input.bool(true, "Show Asia High/Low", group = GRP_SES)
+asiaHLColor      = input.color(#F23645, "Asia H/L Color", group = GRP_SES)
+asiaLabelSize    = input.string("tiny", "Asia H/L Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_SES)
+asiaOpenHour     = input.int(18, "Asia Open Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+asiaOpenMinute   = input.int(0, "Asia Open Minute", minval = 0, maxval = 59, group = GRP_SES)
+asiaCloseHour    = input.int(2, "Asia Close Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+asiaCloseMinute  = input.int(30, "Asia Close Minute", minval = 0, maxval = 59, group = GRP_SES)
+showLonHL        = input.bool(true, "Show London High/Low", group = GRP_SES)
+lonHLColor       = input.color(#2962FF, "London H/L Color", group = GRP_SES)
+lonLabelSize     = input.string("tiny", "London H/L Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_SES)
+lonOpenHour      = input.int(2, "London Open Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+lonOpenMinute    = input.int(30, "London Open Minute", minval = 0, maxval = 59, group = GRP_SES)
+lonCloseHour     = input.int(7, "London Close Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+lonCloseMinute   = input.int(0, "London Close Minute", minval = 0, maxval = 59, group = GRP_SES)
+showNyHL         = input.bool(true, "Show New York High/Low", group = GRP_SES)
+nyHLColor        = input.color(#4CAF50, "New York H/L Color", group = GRP_SES)
+nyLabelSize      = input.string("tiny", "New York H/L Label Size", options = ["tiny", "small", "normal", "large", "huge"], group = GRP_SES)
+nyOpenSesHour    = input.int(7, "New York Open Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+nyOpenSesMinute  = input.int(0, "New York Open Minute", minval = 0, maxval = 59, group = GRP_SES)
+nyCloseSesHour   = input.int(17, "New York Close Hour (24h)", minval = 0, maxval = 23, group = GRP_SES)
+nyCloseSesMinute = input.int(0, "New York Close Minute", minval = 0, maxval = 59, group = GRP_SES)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+int MIN_MS     = 60000
+int AMD_LEN    = 810   // 3 × 270m
+int tfSec      = timeframe.in_seconds()
+int barMs      = tfSec * 1000
+int modNow     = hour(time, tzInput) * 60 + minute(time, tzInput)
+int minuteTime = time - second(time, tzInput) * 1000
+color NO_COLOR = color.new(color.black, 100)
+
+f_size(string s) =>
+    switch s
+        "tiny"  => size.tiny
+        "small" => size.small
+        "large" => size.large
+        "huge"  => size.huge
+        => size.normal
+
+f_tablePos(string s) =>
+    switch s
+        "Top Left"     => position.top_left
+        "Middle Right" => position.middle_right
+        "Middle Left"  => position.middle_left
+        "Bottom Right" => position.bottom_right
+        "Bottom Left"  => position.bottom_left
+        => position.top_right
+
+// Stronger version of a (usually transparent) color, used for borders and text.
+f_solid(color c) => color.new(c, math.max(color.t(c) - 50, 0))
+
+f_phaseColor(int phase) => phase == 0 ? accColor : phase == 1 ? manColor : disColor
+
+// Window length in minutes between two clock times; wraps past midnight.
+f_len(int openH, int openM, int closeH, int closeM) =>
+    int len = (closeH * 60 + closeM - openH * 60 - openM + 1440) % 1440
+    len == 0 ? 1440 : len
+
+// Start time of the daily window [openMin, openMin + lenMin) containing this bar, or na.
+f_windowStart(int openMin, int lenMin) =>
+    int rel = (modNow - openMin + 1440) % 1440
+    rel < lenMin ? minuteTime - rel * MIN_MS : int(na)
+
+// True on the first bar at or after hh:mm each day.
+f_crossed(int targetMin) =>
+    int rel  = (modNow - targetMin + 1440) % 1440
+    int prev = rel[1]
+    not na(prev) and rel < prev
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AMD cycles
+// ─────────────────────────────────────────────────────────────────────────────
+// 270m macro = A | M | D, each 90m = A | M | D, each 30m = A | M | D.
+int amdOpen    = amdHour * 60 + amdMinute
+int amdStart   = f_windowStart(amdOpen, AMD_LEN)
+bool inAmd     = not na(amdStart)
+int amdRel     = inAmd ? int((minuteTime - amdStart) / MIN_MS) : int(na)
+int macroIdx   = inAmd ? int(amdRel / 270) : int(na)
+int midIdx     = inAmd ? int((amdRel % 270) / 90) : int(na)
+int smallIdx   = inAmd ? int((amdRel % 90) / 30) : int(na)
+int macroStart = inAmd ? amdStart + macroIdx * 270 * MIN_MS : int(na)
+int midStart   = inAmd ? macroStart + midIdx * 90 * MIN_MS : int(na)
+int smallStart = inAmd ? midStart + smallIdx * 30 * MIN_MS : int(na)
+
+type CycleState
+    int   start
+    box   bx
+    float hi
+    float lo
+
+var CycleState macroSt = CycleState.new()
+var CycleState midSt   = CycleState.new()
+var CycleState smallSt = CycleState.new()
+
+var array<string> PHASE_TXT = array.from("Acc", "Man", "Dist")
+
+f_cycle(CycleState st, bool show, int start, int lenMin, int phase, bool withText, string halign) =>
+    if show and not na(start) and tfSec <= lenMin * 60
+        if na(st.start) or start != st.start
+            color c = f_phaseColor(phase)
+            st.start := start
+            st.hi    := high
+            st.lo    := low
+            st.bx    := box.new(start, high, start + lenMin * MIN_MS, low, xloc = xloc.bar_time, border_color = f_solid(c), bgcolor = c, text = withText ? PHASE_TXT.get(phase) : "", text_size = size.tiny, text_color = f_solid(c), text_halign = halign, text_valign = text.align_top)
+        else
+            st.hi := math.max(st.hi, high)
+            st.lo := math.min(st.lo, low)
+            st.bx.set_top(st.hi)
+            st.bx.set_bottom(st.lo)
+
+f_cycle(macroSt, showMacroBox, macroStart, 270, macroIdx, true, text.align_center)
+f_cycle(midSt, showMidBox, midStart, 90, midIdx, true, text.align_left)
+f_cycle(smallSt, showSmallBox, smallStart, 30, smallIdx, false, text.align_left)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sessions
+// ─────────────────────────────────────────────────────────────────────────────
+type SessionState
+    int   start
+    box   bx
+    line  hiLn
+    line  loLn
+    label lb
+    float hi
+    float lo
+
+var SessionState asiaSt = SessionState.new()
+var SessionState lonSt  = SessionState.new()
+var SessionState nySt   = SessionState.new()
+
+f_session(SessionState s, int openH, int openM, int closeH, int closeM, bool showBox, color boxCol, bool showHL, color hlCol, string lblSize, string name) =>
+    int lenMin = f_len(openH, openM, closeH, closeM)
+    int start  = f_windowStart(openH * 60 + openM, lenMin)
+    if not na(start) and (showBox or showHL)
+        int end = start + lenMin * MIN_MS
+        if na(s.start) or start != s.start
+            s.start := start
+            s.hi    := high
+            s.lo    := low
+            if showBox
+                s.bx := box.new(start, high, end, low, xloc = xloc.bar_time, border_color = NO_COLOR, bgcolor = boxCol)
+            if showHL
+                s.hiLn := line.new(start, high, end, high, xloc = xloc.bar_time, color = hlCol)
+                s.loLn := line.new(start, low, end, low, xloc = xloc.bar_time, color = hlCol)
+                s.lb   := label.new(start, high, name, xloc = xloc.bar_time, style = label.style_label_lower_left, color = NO_COLOR, textcolor = hlCol, size = f_size(lblSize))
+        else
+            s.hi := math.max(s.hi, high)
+            s.lo := math.min(s.lo, low)
+            if showBox
+                s.bx.set_top(s.hi)
+                s.bx.set_bottom(s.lo)
+            if showHL
+                s.hiLn.set_y1(s.hi)
+                s.hiLn.set_y2(s.hi)
+                s.loLn.set_y1(s.lo)
+                s.loLn.set_y2(s.lo)
+                s.lb.set_y(s.hi)
+
+f_session(asiaSt, asiaOpenHour, asiaOpenMinute, asiaCloseHour, asiaCloseMinute, showAsiaBox, asiaBoxColor, showAsiaHL, asiaHLColor, asiaLabelSize, "Asia")
+f_session(lonSt, lonOpenHour, lonOpenMinute, lonCloseHour, lonCloseMinute, false, NO_COLOR, showLonHL, lonHLColor, lonLabelSize, "London")
+f_session(nySt, nyOpenSesHour, nyOpenSesMinute, nyCloseSesHour, nyCloseSesMinute, false, NO_COLOR, showNyHL, nyHLColor, nyLabelSize, "NY")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Open lines
+// ─────────────────────────────────────────────────────────────────────────────
+type OpenLine
+    line  ln
+    label lb
+
+var OpenLine coLn    = OpenLine.new()
+var OpenLine nyOpLn  = OpenLine.new()
+var OpenLine nyMidLn = OpenLine.new()
+var OpenLine yoLn    = OpenLine.new()
+var OpenLine moLn    = OpenLine.new()
+var OpenLine woLn    = OpenLine.new()
+
+// Only the latest line of each kind is kept. It runs from the trigger bar's open
+// to the current bar + N bars while `extendNow` is true.
+f_openLine(OpenLine o, bool show, bool trig, bool extendNow, string txt) =>
+    if show
+        int x2 = time + olExtend * barMs
+        if trig
+            o.ln.delete()
+            o.lb.delete()
+            o.ln := line.new(time, open, x2, open, xloc = xloc.bar_time, color = olColor, style = line.style_dashed)
+            o.lb := label.new(x2, open, txt, xloc = xloc.bar_time, style = label.style_label_lower_left, color = NO_COLOR, textcolor = olColor, size = f_size(olLabelSize))
+        else if extendNow and not na(o.ln)
+            o.ln.set_x2(x2)
+            o.lb.set_x(x2)
+
+int coStart  = switch coCycle
+    "270m" => macroStart
+    "30m"  => smallStart
+    => midStart
+bool coTrig  = not na(coStart) and coStart != nz(coStart[1])
+
+f_openLine(coLn, showCO, coTrig, inAmd, "C.O.")
+f_openLine(nyOpLn, showNyOpen, f_crossed(nyOpenHour * 60 + nyOpenMinute), true, str.format("{0,number,00}:{1,number,00}", nyOpenHour, nyOpenMinute))
+f_openLine(nyMidLn, showNyMid, f_crossed(nyMidHour * 60 + nyMidMinute), true, str.format("{0,number,00}:{1,number,00}", nyMidHour, nyMidMinute))
+f_openLine(yoLn, showYO, timeframe.change("12M"), true, "Y.O.")
+f_openLine(moLn, showMO, timeframe.change("M"), true, "M.O.")
+f_openLine(woLn, showWO, timeframe.change("W"), true, "W.O.")
+
+// Day separator
+bool newDay = f_crossed(0)
+if showDaySep and newDay
+    line.new(time, low, time, high, xloc = xloc.bar_time, extend = extend.both, color = daySepColor, style = line.style_dotted)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Macro time zones
+// ─────────────────────────────────────────────────────────────────────────────
+// Only the active zone (or, outside zones, the next one) is drawn.
+int zoneLenMs = ((zoneEndMin - zoneStartMin + 60) % 60 == 0 ? 60 : (zoneEndMin - zoneStartMin + 60) % 60) * MIN_MS
+int hourStart = minuteTime - minute(time, tzInput) * MIN_MS
+int zoneStart = hourStart + zoneStartMin * MIN_MS
+if minuteTime < zoneStart and minuteTime < zoneStart - 3600000 + zoneLenMs
+    zoneStart -= 3600000
+else if minuteTime >= zoneStart + zoneLenMs
+    zoneStart += 3600000
+int zoneEnd     = zoneStart + zoneLenMs
+bool zoneActive = minuteTime >= zoneStart and minuteTime < zoneEnd
+
+// Zone height: the last ~6 hours of price, padded.
+int   bandLen = int(math.max(1, math.min(21600 / tfSec, 1000)))
+float bandHi  = ta.highest(high, bandLen)
+float bandLo  = ta.lowest(low, bandLen)
+
+var box   zoneBox   = na
+var label zoneLblL  = na
+var label zoneLblR  = na
+
+if barstate.islast and showMacroZones
+    zoneBox.delete()
+    zoneLblL.delete()
+    zoneLblR.delete()
+    float pad = (nz(bandHi, high) - nz(bandLo, low)) * 0.1
+    color zc  = zoneActive ? activeZoneColor : upcomingZoneColor
+    zoneBox := box.new(zoneStart, nz(bandHi, high) + pad, zoneEnd, nz(bandLo, low) - pad, xloc = xloc.bar_time, border_color = NO_COLOR, bgcolor = zc)
+    if showTimeLabels
+        zoneLblL := label.new(zoneStart, close, str.format_time(zoneStart, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_right, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+        zoneLblR := label.new(zoneEnd, close, str.format_time(zoneEnd, "H:mm", tzInput), xloc = xloc.bar_time, style = label.style_label_left, color = NO_COLOR, textcolor = mtLabelColor, size = f_size(mtLabelSize))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status table
+// ─────────────────────────────────────────────────────────────────────────────
+color TBL_BG   = color.new(#131722, 0)
+color TBL_TEXT = color.new(#D1D4DC, 0)
+color TBL_DIM  = color.new(#787B86, 0)
+
+var bool  tblMerged = false
+var table statusTbl = showTable ? table.new(f_tablePos(tablePosInput), 4, 5, bgcolor = TBL_BG, frame_color = TBL_DIM, frame_width = 1, border_color = color.new(TBL_DIM, 50), border_width = 1) : na
+
+if barstate.islast and showTable
+    statusTbl.cell(0, 0, "", text_size = size.tiny)
+    for [c, name] in PHASE_TXT
+        statusTbl.cell(c + 1, 0, str.substring(name, 0, 1), text_color = TBL_TEXT, text_size = size.tiny)
+    array<string> rowNames = array.from("270m", "90m", "30m")
+    array<int>    rowIdx   = array.from(macroIdx, midIdx, smallIdx)
+    for r = 0 to 2
+        statusTbl.cell(0, r + 1, rowNames.get(r), text_color = TBL_TEXT, text_size = size.tiny, text_halign = text.align_right)
+        int idx = rowIdx.get(r)
+        for c = 0 to 2
+            bool on = not na(idx) and idx == c
+            statusTbl.cell(c + 1, r + 1, on ? "●" : "○", text_color = on ? color.new(f_phaseColor(c), 0) : TBL_DIM, text_size = size.tiny)
+    statusTbl.cell(0, 4, "Macro", text_color = TBL_TEXT, text_size = size.tiny, text_halign = text.align_right)
+    statusTbl.cell(1, 4, zoneActive ? "● ACTIVE" : "○ INACTIVE", text_color = zoneActive ? #4CAF50 : TBL_DIM, text_size = size.tiny)
+    statusTbl.cell(2, 4, "")
+    statusTbl.cell(3, 4, "")
+    if not tblMerged
+        statusTbl.merge_cells(1, 4, 3, 4)
+        tblMerged := true
